@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart ChatBot</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      /* --- GLOBAL STYLES --- */
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: #f0f2f5;
+        margin: 0;
+      }
+
+      /* TOGGLE BUTTON */
+      .chat-toggler {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        height: 60px;
+        width: 60px;
+        background: #724ae8;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+        z-index: 1000;
+      }
+      .chat-toggler:hover {
+        transform: scale(1.1);
+      }
+
+      /* CHAT POPUP */
+      .chat-popup {
+        position: fixed;
+        bottom: 100px;
+        right: 30px;
+        width: 380px;
+        height: 550px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+        z-index: 999;
+      }
+
+      /* HEADER */
+      .chat-header {
+        background: #724ae8;
+        padding: 15px 20px;
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      /* New Styles for Header Icons */
+      .header-actions {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+      .header-btn {
+        cursor: pointer;
+        transition: opacity 0.3s;
+      }
+      .header-btn:hover {
+        opacity: 0.8;
+      }
+
+      /* BODY (Drop Zone) */
+      .chat-body {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        background: #f9f9f9;
+        position: relative;
+      }
+      /* Drag & Drop Overlay */
+      .chat-body.dragover::before {
+        content: "Drop file here";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(114, 74, 232, 0.1);
+        border: 2px dashed #724ae8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: #724ae8;
+        font-weight: bold;
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      /* MESSAGES */
+      .message {
+        max-width: 80%;
+        padding: 10px 14px;
+        border-radius: 12px;
+        font-size: 14px;
+        position: relative;
+        word-wrap: break-word;
+      }
+      .message.user {
+        align-self: flex-end;
+        background: #724ae8;
+        color: white;
+        border-bottom-right-radius: 2px;
+      }
+      .message.bot {
+        align-self: flex-start;
+        background: #e2e2e2;
+        color: black;
+        border-bottom-left-radius: 2px;
+      }
+
+      .chat-img {
+        max-width: 100%;
+        border-radius: 8px;
+        margin-top: 5px;
+        cursor: pointer;
+      }
+      audio {
+        max-width: 220px;
+        margin-top: 5px;
+        border-radius: 20px;
+      }
+
+      .delete-btn {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: red;
+        color: white;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        font-size: 10px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+      .message:hover .delete-btn {
+        display: flex;
+      }
+
+      /* PREVIEW AREA (Staging) */
+      .preview-area {
+        padding: 10px;
+        border-top: 1px solid #ddd;
+        background: #f1f1f1;
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .preview-content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: #333;
+        overflow: hidden;
+      }
+      .preview-content i {
+        font-size: 20px;
+        color: #724ae8;
+      }
+      .remove-preview {
+        cursor: pointer;
+        color: red;
+        font-size: 16px;
+      }
+
+      /* FOOTER / INPUT */
+      .chat-footer {
+        padding: 10px 15px;
+        border-top: 1px solid #ddd;
+        background: white;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .chat-footer input[type="text"] {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 25px;
+        outline: none;
+        transition: 0.3s;
+      }
+      .chat-footer input:focus {
+        border-color: #724ae8;
+      }
+
+      .icon-btn {
+        cursor: pointer;
+        color: #555;
+        font-size: 18px;
+        padding: 8px;
+        transition: 0.2s;
+      }
+      .icon-btn:hover {
+        color: #724ae8;
+        background: #eee;
+        border-radius: 50%;
+      }
+
+      .send-btn {
+        background: #724ae8;
+        color: white;
+        padding: 10px;
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+      }
+
+      /* Voice Recording Animation */
+      .recording-active {
+        color: red !important;
+        animation: pulse 1s infinite;
+      }
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.2);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      /* System Message for Cleared Chat */
+      .system-msg {
+        text-align: center;
+        font-size: 12px;
+        color: gray;
+        margin: 10px 0;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chat-toggler" onclick="toggleChat()">
+      <i class="fas fa-comment-dots fa-lg"></i>
+    </div>
+
+    <div class="chat-popup" id="chatPopup">
+      <div class="chat-header">
+        <span>Customer Support</span>
+        <div class="header-actions">
+          <i
+            class="fas fa-trash-alt header-btn"
+            onclick="manualClearChat()"
+            title="Clear Chat Frontend"
+          ></i>
+          <i class="fas fa-times header-btn" onclick="toggleChat()"></i>
+        </div>
+      </div>
+
+      <div class="chat-body" id="chatBody"></div>
+
+      <div class="preview-area" id="previewArea">
+        <div class="preview-content">
+          <i id="previewIcon" class="fas fa-file"></i>
+          <span id="previewName">File Name.jpg</span>
+        </div>
+        <i class="fas fa-times remove-preview" onclick="clearPreview()"></i>
+      </div>
+
+      <div class="chat-footer">
+        <label for="fileInput" class="icon-btn"
+          ><i class="fas fa-paperclip"></i
+        ></label>
+        <input
+          type="file"
+          id="fileInput"
+          hidden
+          onchange="handleFileSelect(this.files)"
+        />
+
+        <div class="icon-btn" id="micBtn" onclick="toggleRecording()">
+          <i class="fas fa-microphone"></i>
+        </div>
+
+        <input
+          type="text"
+          id="msgInput"
+          placeholder="Type a message..."
+          onkeypress="if(event.key==='Enter') sendMessage()"
+        />
+
+        <button class="send-btn" onclick="sendMessage()">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const API_URL = "http://localhost:8080/api/chat";
+
+      // State Variables
+      let stagedFile = null;
+      let mediaRecorder = null;
+      let audioChunks = [];
+      let isRecording = false;
+
+      // --- NEW: AUTO DELETE LOGIC (10 Minutes) ---
+      // 10 minutes = 600,000 milliseconds
+      setTimeout(() => {
+        const chatBody = document.getElementById("chatBody");
+        // Only clear if chat is not already empty
+        if (chatBody.innerHTML.trim() !== "") {
+          chatBody.innerHTML =
+            '<div class="system-msg">Session Expired: Chat cleared automatically after 10 mins.</div>';
+          console.log("Chat auto-cleared due to timeout.");
+        }
+      }, 600000);
+
+      // --- NEW: MANUAL CLEAR FUNCTION ---
+      function manualClearChat() {
+        if (
+          confirm("Are you sure you want to clear the chat from this screen?")
+        ) {
+          const chatBody = document.getElementById("chatBody");
+          chatBody.innerHTML =
+            '<div class="system-msg">Chat cleared manually.</div>';
+        }
+      }
+
+      // --- 1. INITIALIZATION & DRAG/DROP ---
+      const chatBody = document.getElementById("chatBody");
+
+      chatBody.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        chatBody.classList.add("dragover");
+      });
+      chatBody.addEventListener("dragleave", () => {
+        chatBody.classList.remove("dragover");
+      });
+      chatBody.addEventListener("drop", (e) => {
+        e.preventDefault();
+        chatBody.classList.remove("dragover");
+        if (e.dataTransfer.files.length > 0) {
+          handleFileSelect(e.dataTransfer.files);
+        }
+      });
+
+      // --- 2. FILE HANDLING & PREVIEW ---
+      function handleFileSelect(files) {
+        if (files.length === 0) return;
+        stagedFile = files[0];
+
+        const previewArea = document.getElementById("previewArea");
+        const previewName = document.getElementById("previewName");
+        const previewIcon = document.getElementById("previewIcon");
+
+        previewArea.style.display = "flex";
+        previewName.innerText = stagedFile.name;
+
+        if (stagedFile.type.startsWith("image")) {
+          previewIcon.className = "fas fa-image";
+        } else if (stagedFile.type.startsWith("audio")) {
+          previewIcon.className = "fas fa-music";
+        } else {
+          previewIcon.className = "fas fa-file";
+        }
+      }
+
+      function clearPreview() {
+        stagedFile = null;
+        document.getElementById("previewArea").style.display = "none";
+        document.getElementById("fileInput").value = "";
+      }
+
+      // --- 3. VOICE RECORDING ---
+      async function toggleRecording() {
+        const micBtn = document.getElementById("micBtn");
+
+        if (!isRecording) {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+              audio: true,
+            });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+              audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = () => {
+              const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+              const audioFile = new File(
+                [audioBlob],
+                "voice_msg_" + Date.now() + ".webm",
+                { type: "audio/webm" }
+              );
+              handleFileSelect([audioFile]);
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+            micBtn.innerHTML = '<i class="fas fa-stop"></i>';
+            micBtn.classList.add("recording-active");
+          } catch (err) {
+            alert("Microphone access denied or not supported.");
+          }
+        } else {
+          mediaRecorder.stop();
+          isRecording = false;
+          micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+          micBtn.classList.remove("recording-active");
+        }
+      }
+
+      // --- 4. SENDING MESSAGES ---
+      async function sendMessage() {
+        const txtInput = document.getElementById("msgInput");
+        const text = txtInput.value.trim();
+
+        if (text) {
+          const msg = { sender: "USER", content: text, msgType: "TEXT" };
+          await fetch(API_URL + "/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(msg),
+          });
+          txtInput.value = "";
+        }
+
+        if (stagedFile) {
+          const formData = new FormData();
+          formData.append("file", stagedFile);
+
+          const div = document.createElement("div");
+          div.className = "message user";
+          div.innerText = "Uploading " + stagedFile.name + "...";
+          chatBody.appendChild(div);
+
+          await fetch(API_URL + "/upload", { method: "POST", body: formData });
+          clearPreview();
+        }
+
+        setTimeout(loadMessages, 500);
+      }
+
+      // --- 5. LOADING & DELETING MESSAGES ---
+      async function loadMessages() {
+        // Check if chat is manually cleared/expired to avoid re-fetching immediately
+        // (Optional: remove this check if you want live updates to override clear)
+        const chatBody = document.getElementById("chatBody");
+
+        const res = await fetch(API_URL);
+        const data = await res.json();
+
+        // Clear current body to rebuild
+        chatBody.innerHTML = "";
+
+        data.forEach((msg) => {
+          const div = document.createElement("div");
+          div.className = `message ${msg.sender.toLowerCase()}`;
+
+          let contentHTML = "";
+
+          if (msg.msgType === "IMAGE") {
+            contentHTML = `<img src="http://localhost:8080${msg.content}" class="chat-img" onclick="window.open(this.src)">`;
+          } else if (msg.msgType === "AUDIO") {
+            contentHTML = `<audio controls src="http://localhost:8080${msg.content}"></audio>`;
+          } else {
+            contentHTML = msg.content;
+          }
+
+          div.innerHTML = `
+                    <span class="delete-btn" onclick="deleteMsg(${msg.id}, this)"><i class="fas fa-trash"></i></span>
+                    ${contentHTML}
+                `;
+          chatBody.appendChild(div);
+        });
+        chatBody.scrollTop = chatBody.scrollHeight;
+      }
+
+      async function deleteMsg(id, btn) {
+        if (confirm("Delete this message?")) {
+          await fetch(API_URL + "/" + id, { method: "DELETE" });
+          btn.parentElement.remove();
+        }
+      }
+
+      function toggleChat() {
+        const popup = document.getElementById("chatPopup");
+        popup.style.display = popup.style.display === "flex" ? "none" : "flex";
+        if (popup.style.display === "flex") loadMessages();
+      }
+    </script>
+  </body>
+</html>
